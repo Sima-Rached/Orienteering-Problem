@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orienteering Problem — Tableau de Bord Comparatif</title>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #f5f4f0;
+  --surface: #fafaf8;
+  --card:    #ffffff;
+  --border:  #dddbd4;
+  --border2: #c8c5bc;
+  --text:    #1a1916;
+  --muted:   #7a7670;
+  --muted2:  #5a5750;
+  --mono:    'IBM Plex Mono', monospace;
+  --serif:   'Crimson Pro', Georgia, serif;
+  --sans:    'Source Sans 3', sans-serif;
+  --ac:      #2d5f8a;
+  --topbar-h: 54px;
+  --nav-h:    44px;
+}
+
+html, body { height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  overflow: hidden;
+}
+
+/* ── Top bar ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  height: var(--topbar-h);
+  background: var(--surface);
+  border-bottom: 2px solid var(--border);
+}
+.topbar-brand { display: flex; align-items: baseline; gap: 12px; }
+.topbar-brand .logo {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.topbar-brand .sub {
+  font-size: .72rem;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+.topbar-info { display: flex; gap: 16px; align-items: center; }
+.pill {
+  font-family: var(--mono);
+  font-size: .65rem;
+  padding: 3px 10px;
+  border-radius: 2px;
+  border: 1px solid var(--border2);
+  color: var(--muted2);
+  background: var(--bg);
+}
+
+/* ── Method nav ── */
+.method-nav {
+  display: flex;
+  gap: 0;
+  padding: 0 28px;
+  height: var(--nav-h);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+.method-nav::-webkit-scrollbar { height: 3px; }
+.method-nav::-webkit-scrollbar-thumb { background: var(--border2); }
+
+.mtab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px;
+  height: 100%;
+  font-family: var(--mono);
+  font-size: .68rem;
+  font-weight: 500;
+  letter-spacing: .06em;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color .15s;
+  position: relative;
+  bottom: -1px;
+}
+.mtab:hover { color: var(--text); }
+.mtab.active { color: var(--ac); border-bottom-color: var(--ac); }
+.mtab .badge {
+  font-size: .56rem;
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--ac) 10%, transparent);
+  color: var(--ac);
+  border: 1px solid color-mix(in srgb, var(--ac) 25%, transparent);
+}
+
+/* ── Page body (below topbar + nav) ── */
+.page-body {
+  height: calc(100vh - var(--topbar-h) - var(--nav-h));
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Overview ── */
+.overview-grid {
+  display: none;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  padding: 22px 28px;
+  overflow-y: auto;
+  height: 100%;
+}
+.overview-grid.visible { display: grid; }
+
+.overview-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  transition: border-color .18s, box-shadow .18s;
+  cursor: pointer;
+}
+.overview-card:hover {
+  border-color: var(--ac);
+  box-shadow: 0 2px 12px rgba(0,0,0,.07);
+}
+.oc-header {
+  padding: 13px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.oc-title { font-family: var(--serif); font-size: .95rem; font-weight: 600; }
+.oc-badge {
+  font-family: var(--mono);
+  font-size: .56rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 2px;
+  white-space: nowrap;
+  border: 1px solid;
+}
+.oc-body { padding: 13px 16px; }
+.oc-stat-row { display: flex; justify-content: space-between; margin-bottom: 7px; }
+.oc-sl { font-size: .7rem; color: var(--muted2); }
+.oc-sv { font-family: var(--mono); font-size: .72rem; font-weight: 500; color: var(--ac); }
+.oc-bar-wrap { margin-top: 10px; }
+.oc-bar-label { display: flex; justify-content: space-between; font-size: .6rem; color: var(--muted); margin-bottom: 4px; }
+.oc-bar-track { height: 3px; background: var(--border2); border-radius: 1px; overflow: hidden; }
+.oc-bar-fill { height: 100%; border-radius: 1px; transition: width .6s ease; }
+.oc-desc { font-family: var(--serif); font-size: .82rem; color: var(--muted2); line-height: 1.65; margin-top: 10px; font-style: italic; }
+.oc-steps { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
+.oc-step { display: flex; gap: 8px; margin-bottom: 6px; align-items: flex-start; font-size: .7rem; }
+.oc-step-num { font-family: var(--mono); font-size: .58rem; font-weight: 500; color: var(--ac); background: color-mix(in srgb, var(--ac) 10%, transparent); padding: 1px 6px; border-radius: 2px; flex-shrink: 0; border: 1px solid color-mix(in srgb, var(--ac) 20%, transparent); }
+.oc-step-text { color: var(--muted2); line-height: 1.55; }
+
+/* ── Workspace ── */
+.workspace {
+  display: none;
+  height: 100%;
+  grid-template-columns: 1fr 320px;
+  grid-template-rows: auto 1fr;
+}
+.workspace.visible { display: grid; }
+
+/* ── KPI row ── */
+.kpi-row {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 1px;
+  background: var(--border);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.kpi-cell {
+  flex: 1;
+  background: var(--surface);
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.kpi-label {
+  font-family: var(--mono);
+  font-size: .55rem;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.kpi-value {
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--ac);
+  line-height: 1;
+}
+
+/* ── Graph area (left column) ── */
+.graph-area {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+  min-height: 0;
+}
+
+/* graph takes all remaining space */
+.graph-wrap {
+  flex: 1;
+  min-height: 0;
+  background: var(--card);
+  position: relative;
+}
+#graph-plotly { width: 100%; height: 100%; }
+
+/* ── Controls bar — always visible, fixed height ── */
+.controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  height: 42px;
+}
+.ctrl-btn {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: .65rem;
+  font-weight: 500;
+  padding: 5px 16px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background .12s;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ctrl-btn:hover { background: var(--bg); }
+.ctrl-btn.primary {
+  background: var(--ac);
+  color: #fff;
+  border-color: transparent;
+}
+.ctrl-btn.primary:hover { opacity: .88; }
+.ctrl-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+.step-counter {
+  font-family: var(--mono);
+  font-size: .68rem;
+  color: var(--muted);
+  white-space: nowrap;
+  margin-left: auto;
+  letter-spacing: .04em;
+}
+.step-counter span {
+  color: var(--ac);
+  font-weight: 500;
+}
+
+/* ── Algorithm breakdown box ── */
+.algo-box {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 10px 18px 11px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.algo-box-label {
+  font-family: var(--mono);
+  font-size: .56rem;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 7px;
+}
+.algo-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.algo-step-row {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  font-size: .72rem;
+  line-height: 1.45;
+}
+.algo-step-num {
+  font-family: var(--mono);
+  font-size: .58rem;
+  font-weight: 500;
+  color: var(--ac);
+  background: color-mix(in srgb, var(--ac) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ac) 22%, transparent);
+  padding: 0 6px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  min-width: 22px;
+  text-align: center;
+}
+.algo-step-text { color: var(--muted2); }
+.algo-step-text b { color: var(--text); font-weight: 600; }
+
+/* ── Legend ── */
+.legend-row {
+  display: flex;
+  gap: 16px;
+  padding: 6px 16px;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  height: 30px;
+  align-items: center;
+}
+.li { display: flex; align-items: center; gap: 5px; font-size: .61rem; color: var(--muted); font-family: var(--mono); }
+.ldot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.lline { width: 16px; height: 2px; border-radius: 1px; flex-shrink: 0; }
+
+/* ── Right panel ── */
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface);
+  min-height: 0;
+}
+.method-info {
+  padding: 14px 18px 11px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.method-info .type-badge {
+  font-family: var(--mono);
+  font-size: .6rem;
+  font-weight: 500;
+  letter-spacing: .1em;
+  color: var(--ac);
+  margin-bottom: 4px;
+}
+.method-info h2 {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 5px;
+  line-height: 1.3;
+  color: var(--text);
+}
+.method-info .desc {
+  font-size: .74rem;
+  color: var(--muted2);
+  line-height: 1.65;
+}
+
+.params-section {
+  padding: 11px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.params-section h3 {
+  font-family: var(--mono);
+  font-size: .56rem;
+  font-weight: 500;
+  letter-spacing: .1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 9px;
+}
+.params-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+.param-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 6px 10px;
+}
+.param-item .pk { font-size: .56rem; color: var(--muted); font-family: var(--mono); letter-spacing: .06em; margin-bottom: 2px; }
+.param-item .pv { font-family: var(--mono); font-size: .73rem; font-weight: 500; color: var(--ac); }
+
+.step-outcome {
+  padding: 11px 18px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+.step-outcome::-webkit-scrollbar { width: 3px; }
+.step-outcome::-webkit-scrollbar-thumb { background: var(--border2); }
+.step-outcome h3 {
+  font-family: var(--mono);
+  font-size: .56rem;
+  font-weight: 500;
+  letter-spacing: .1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.outcome-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--ac);
+  border-radius: 0 3px 3px 0;
+  padding: 10px 12px;
+  font-size: .72rem;
+  line-height: 1.75;
+  color: var(--muted2);
+}
+.outcome-box b { color: var(--text); font-weight: 600; }
+.action-chip {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: .58rem;
+  font-weight: 500;
+  padding: 1px 7px;
+  border-radius: 2px;
+  margin-left: 4px;
+}
+
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-in { animation: fadeSlide .2s ease forwards; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <span class="logo">Orienteering Problem</span>
+  </div>
+  <div class="topbar-info">
+    <span class="pill">n = 7 sommets</span>
+    <span class="pill">T<sub>max</sub> = 15.0</span>
+    <span class="pill">seed = 42</span>
+  </div>
+</div>
+
+<!-- METHOD NAV -->
+<div class="method-nav" id="method-nav"></div>
+
+<!-- PAGE BODY -->
+<div class="page-body">
+
+  <!-- OVERVIEW -->
+  <div id="overview-panel" class="overview-grid"></div>
+
+  <!-- WORKSPACE -->
+  <div class="workspace" id="workspace">
+
+    <!-- KPI ROW -->
+    <div class="kpi-row">
+      <div class="kpi-cell"><div class="kpi-label">Profit Courant</div><div class="kpi-value" id="kpi-profit">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Budget Restant</div><div class="kpi-value" id="kpi-budget">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Coût Route</div><div class="kpi-value" id="kpi-cost">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Meilleur Profit</div><div class="kpi-value" id="kpi-incumbent">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Nœuds Explorés</div><div class="kpi-value" id="kpi-explored">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Nœuds Élaguées</div><div class="kpi-value" id="kpi-pruned">—</div></div>
+    </div>
+
+    <!-- GRAPH AREA (left) -->
+    <div class="graph-area">
+
+      <div class="graph-wrap">
+        <div id="graph-plotly"></div>
+      </div>
+
+      <!-- Controls — always at bottom, fixed height -->
+      <div class="controls-bar">
+        <button class="ctrl-btn primary" id="btn-play" onclick="playAnim()">▶ Play</button>
+        <button class="ctrl-btn" onclick="resetAnim()">↺ Reset</button>
+        <span class="step-counter">Étape <span id="step-current">0</span> / <span id="step-total">0</span></span>
+      </div>
+
+      <!-- Algorithm breakdown -->
+      <div class="algo-box" id="algo-box">
+        <div class="algo-box-label">Déroulement de l'Algorithme</div>
+        <div class="algo-steps-list" id="algo-steps-list"></div>
+      </div>
+
+      <!-- Legend -->
+      <div class="legend-row">
+        <span class="li"><span class="ldot" style="background:#c8d8e8;border:1.5px solid #7aabce"></span>Non visité</span>
+        <span class="li"><span class="ldot" id="leg-visited"></span>Visité</span>
+        <span class="li">★ <span style="color:#2d5f8a;margin-left:2px">Dépôt</span></span>
+        <span class="li"><span class="lline" id="leg-route"></span>Route active</span>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+      <div class="method-info">
+        <div class="type-badge" id="ri-type">—</div>
+        <h2 id="ri-name">—</h2>
+        <p class="desc" id="ri-desc">—</p>
+      </div>
+      <div class="params-section">
+        <h3>Paramètres Clés</h3>
+        <div class="params-grid" id="params-grid"></div>
+      </div>
+      <div class="step-outcome">
+        <h3>État Courant</h3>
+        <div class="outcome-box" id="outcome-box">Sélectionnez un onglet et appuyez sur Play.</div>
+      </div>
+    </div>
+
+  </div><!-- /workspace -->
+</div><!-- /page-body -->
+
+<script>
+/* ═══════════════════════════════════════════════
+   INSTANCE DATA
+═══════════════════════════════════════════════ */
+const V = [
+  { id:0, x:0, y:0, profit:0,  label:'v0', type:'depot' },
+  { id:1, x:2, y:1, profit:5,  label:'v1', type:'client' },
+  { id:2, x:4, y:0, profit:8,  label:'v2', type:'client' },
+  { id:3, x:1, y:4, profit:7,  label:'v3', type:'client' },
+  { id:4, x:6, y:2, profit:9,  label:'v4', type:'client' },
+  { id:5, x:3, y:5, profit:6,  label:'v5', type:'client' },
+  { id:6, x:5, y:5, profit:10, label:'v6', type:'client' },
+];
+const BUDGET = 15;
+
+function dist(a,b){ return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2); }
+const COST = V.map(a => V.map(b => +dist(a,b).toFixed(4)));
+function routeCost(r){ let s=0; for(let i=0;i<r.length-1;i++) s+=COST[r[i]][r[i+1]]; return s; }
+function routeProfit(r){ return r.slice(1,-1).reduce((s,v)=>s+V[v].profit,0); }
+
+/* ═══════════════════════════════════════════════
+   ALGORITHM BREAKDOWNS (per method)
+   Each entry: array of { num, text }
+═══════════════════════════════════════════════ */
+const ALGO_STEPS = {
+  dp: [
+    { num:'1', text:'<b>Initialisation :</b> dp[{s}][s] = 0, tous autres états = −∞' },
+    { num:'2', text:'<b>Transition :</b> pour chaque sous-ensemble S et sommet v ∈ S, calculer dp[S][v] depuis tous les prédécesseurs u ∈ S∖{v}' },
+    { num:'3', text:'<b>Contrainte :</b> rejeter toute transition si dist cumulée > T<sub>max</sub>' },
+    { num:'4', text:'<b>Bitmask :</b> S représenté en entier — le bit i vaut 1 si le nœud i est visité' },
+    { num:'5', text:'<b>Extraction :</b> parcourir tous états finaux, sélectionner celui de profit maximal atteignant e' },
+    { num:'6', text:'<b>Reconstruction :</b> remonter les prédécesseurs pour retrouver la meilleure tournée ' },
+  ],
+  bb: [
+    { num:'1', text:'<b>Initialisation greedy :</b> construire une solution initiale par insertion gloutonne — fournit un incumbent fort d\'emblée' },
+    { num:'2', text:'<b>Branchement :</b> explorer l\'arbre en profondeur d\'abord ; à chaque nœud, tenter d\'ajouter un client non visité' },
+    { num:'3', text:'<b>Faisabilité :</b> couper immédiatement si dist partielle > T<sub>max</sub>' },
+    { num:'4', text:'<b>Élagage par borne :</b> calculer la borne supérieure (profit courant + profits restants faisables) ; couper si borne ≤ incumbent' },
+    { num:'5', text:'<b>Mise à jour incumbent :</b> à chaque solution entière complète, mettre à jour le meilleur si amélioration' },
+    { num:'6', text:'<b>Terminaison :</b> arrêt quand l\'arbre est entièrement exploré ou limite de temps atteinte' },
+  ],
+  ilp: [
+    { num:'1', text:'<b>Variables :</b> x<sub>ij</sub> ∈ {0,1} (arc utilisé), u<sub>i</sub> ≥ 0 (ordre de visite MTZ)' },
+    { num:'2', text:'<b>Objectif :</b> maximiser Σ p<sub>j</sub>·x<sub>ij</sub> — la somme des profits des arcs empruntés' },
+    { num:'3', text:'<b>Contrainte budget :</b> Σ d<sub>ij</sub>·x<sub>ij</sub> ≤ T<sub>max</sub> sur tous les arcs utilisés' },
+    { num:'4', text:'<b>Contrainte flot :</b> Σ x<sub>ij</sub> = Σ x<sub>ji</sub> pour tout nœud intermédiaire (conservation)' },
+    { num:'5', text:'<b>Contraintes MTZ :</b> u<sub>i</sub> − u<sub>j</sub> + n·x<sub>ij</sub> ≤ n−1 — éliminent les sous-tours' },
+    { num:'6', text:'<b>Résolution :</b> solveur CBC (branch & cut) via PuLP — explore l\'arbre B&B sur relaxations LP successives' },
+  ],
+  sa: [
+    { num:'1', text:'<b>Solution initiale :</b> construction greedy-aléatoire, calcul de T<sub>0</sub> par auto-calibration (80 % d\'acceptation)' },
+    { num:'2', text:'<b>Génération voisin :</b> appliquer aléatoirement l\'un des 4 opérateurs : INSERT, REMOVE, SWAP, 2-OPT' },
+    { num:'3', text:'<b>Critère d\'acceptation :</b> si Δp > 0 → toujours accepter ; sinon accepter avec P = exp(Δp / T)' },
+    { num:'4', text:'<b>Refroidissement :</b> T<sub>k+1</sub> = α · T<sub>k</sub> avec α = 0.995 après chaque palier de 100 itérations' },
+    { num:'5', text:'<b>Mémorisation :</b> conserver la meilleure solution rencontrée (indépendamment de la solution courante)' },
+    { num:'6', text:'<b>Arrêt :</b> T < T<sub>min</sub> = 0.01 ou iter_max = 50 000 atteint' },
+  ],
+  tabu: [
+    { num:'1', text:'<b>Initialisation :</b> solution greedy aléatoire, liste tabou vide, tenure = 7 itérations' },
+    { num:'2', text:'<b>Génération voisinage :</b> produire 30 voisins par INSERT, REMOVE, SWAP et 2-OPT' },
+    { num:'3', text:'<b>Sélection :</b> choisir le meilleur voisin non-tabou ; si tabou mais profit > f* → aspiration' },
+    { num:'4', text:'<b>Mise à jour liste tabou :</b> enregistrer l\'attribut du mouvement effectué, expiration à iter + tenure' },
+    { num:'5', text:'<b>Intensification :</b> si 80 itérations sans amélioration → redémarrer depuis la meilleure solution connue' },
+    { num:'6', text:'<b>Arrêt :</b> iter_max = 500 atteint ou limite de temps' },
+  ],
+  grasp: [
+    { num:'1', text:'<b>Construction (RCL) :</b> calculer attractivité α<sub>v</sub> = p<sub>v</sub> / δ<sub>v</sub> pour chaque client candidat' },
+    { num:'2', text:'<b>RCL :</b> restreindre aux candidats dont α<sub>v</sub> ≥ α<sub>max</sub> − α · (α<sub>max</sub> − α<sub>min</sub>) avec α = 0.35' },
+    { num:'3', text:'<b>Insertion aléatoire :</b> tirer uniformément dans la RCL, insérer à la meilleure position faisable' },
+    { num:'4', text:'<b>Recherche locale :</b> appliquer 2-OPT + Insert + Remove jusqu\'à optimum local' },
+    { num:'5', text:'<b>Mémorisation :</b> conserver la meilleure solution sur toutes les itérations' },
+    { num:'6', text:'<b>Répétition :</b> recommencer phases 1–4 pour 70 itérations indépendantes' },
+  ],
+};
+
+/* ═══════════════════════════════════════════════
+   STEP GENERATORS
+═══════════════════════════════════════════════ */
+function generateBBSteps(){
+  const steps=[]; let ne=0,np=0,inc=0;
+  function rp(r){ return routeProfit(r); }
+  function push(action,route,reason){
+    const cp=rp(route),cc=routeCost(route),rb=BUDGET-cc;
+    steps.push({step_number:steps.length+1,action,route:[...route],current_profit:cp,current_cost:cc,remaining_budget:rb,nodes_explored:ne,nodes_pruned:np,decision_reason:reason,best_incumbent_profit:inc});
+  }
+  const greedy=[0,3,5,6,0]; inc=rp(greedy); ne++;
+  push('initialize',greedy,'Initialisation greedy : profit='+inc.toFixed(2));
+  ne++; push('add_node',[0,6],'Ajouter nœud 6 (profit=10, coût='+COST[0][6].toFixed(2)+')');
+  ne++; push('add_node',[0,6,5],'Ajouter nœud 5 (profit=6)');
+  const c1=[0,6,5,0]; ne++; push('update_incumbent',c1,'Nouvelle meilleure solution : profit='+(rp(c1)).toFixed(2)); inc=rp(c1);
+  ne++; push('add_node',[0,6,5,3],'Ajouter nœud 3 (profit=7)');
+  const c2=[0,6,5,3,0]; ne++;
+  if(routeCost(c2)<=BUDGET+1e-9){ push('update_incumbent',c2,'Profit amélioré : '+(rp(c2)).toFixed(2)); inc=rp(c2); }
+  np++; push('prune',[0,6,5,3],'Budget dépassé pour ajout nœud 4');
+  ne++; push('add_node',[0,4],'Ajouter nœud 4 (profit=9)');
+  ne++; push('add_node',[0,4,6],'Ajouter nœud 6 (profit=10)');
+  const c3=[0,4,6,5,0]; ne++; push('add_node',c3.slice(0,-1),'Essai fermeture via nœud 5');
+  if(routeCost(c3)<=BUDGET+1e-9&&rp(c3)>inc){ push('update_incumbent',c3,'Nouveau champion : profit='+(rp(c3)).toFixed(2)); inc=rp(c3); }
+  else { np++; push('prune',c3.slice(0,-1),'Budget insuffisant pour fermeture'); }
+  ne++; push('add_node',[0,2,4],'Explorer [0,2,4]'); np++; push('prune',[0,2,4],'Profit optimiste ≤ meilleur incumbent');
+  ne++; push('add_node',[0,3,5,6],'Explorer [0,3,5,6]');
+  const final=[0,3,5,6,0]; push('update_incumbent',final,'Solution meilleure : profit='+(rp(final)).toFixed(2)); inc=rp(final);
+  np++; push('prune',[0,1],'Branche [0,1,...] élaguée'); np++; push('prune',[0,2],'Branche [0,2,...] élaguée');
+  push('initialize',final,'Exploration terminée. = '+inc.toFixed(2));
+  return {total_steps:steps.length,steps};
+}
+
+function generateDPSteps(){
+  const steps=[]; let ne=0,np=0,inc=0;
+  function push(action,route,reason,mask=''){
+    const cp=routeProfit(route),cc=routeCost(route),rb=BUDGET-cc;
+    steps.push({step_number:steps.length+1,action,route:[...route],current_profit:cp,current_cost:cc,remaining_budget:rb,nodes_explored:ne,nodes_pruned:np,decision_reason:reason+' [mask='+mask+']',best_incumbent_profit:inc});
+  }
+  push('initialize',[0,0],'État initial: dp[{0}][0]=0','0000001');
+  ne++; push('dp_state',[0,1],'Transition vers nœud 1','0000011');
+  push('dp_state',[0,2],'Transition vers nœud 2','0000101'); ne++;
+  push('dp_state',[0,3],'Transition vers nœud 3','0001001'); ne++;
+  push('dp_state',[0,3,5],'Transition vers nœud 5','0101001'); ne++;
+  push('dp_state',[0,3,5,6],'Transition vers nœud 6','1101001'); ne++;
+  np++; push('prune',[0,3,5,6,4],'Budget insuffisant pour nœud 4','—');
+  push('dp_state',[0,6,5,3],'Chemin alternatif','1101001'); ne++;
+  inc=routeProfit([0,3,5,6,0]);
+  push('update_incumbent',[0,3,5,6,0],'Solution DP : profit='+inc.toFixed(2),'FINAL');
+  push('dp_state',[0,4,6],'Explorer dp[{0,4,6}][6]','1010001'); ne++;
+  np++; push('prune',[0,4,6,5],'État déjà dominé','—'); np++;
+  push('initialize',[0,3,5,6,0],'DP terminé');
+  return {total_steps:steps.length,steps};
+}
+
+function generateILPSteps(){
+  const steps=[]; let ne=0,np=0,inc=0;
+  function push(action,route,reason){
+    const cp=routeProfit(route),cc=routeCost(route),rb=BUDGET-cc;
+    steps.push({step_number:steps.length+1,action,route:[...route],current_profit:cp,current_cost:cc,remaining_budget:rb,nodes_explored:ne,nodes_pruned:np,decision_reason:reason,best_incumbent_profit:inc});
+  }
+  push('initialize',[0,0],'Formulation MILP avec contraintes MTZ');
+  ne++; push('add_node',[0,3],'Relaxation LP : x[0,3]=0.85'); ne++;
+  push('add_node',[0,3,5],'Branche x[3,5]=1'); ne++;
+  push('add_node',[0,3,5,6],'Branche x[5,6]=1'); ne++;
+  const r1=[0,3,5,6,0]; inc=routeProfit(r1);
+  push('update_incumbent',r1,'Borne entière = '+inc.toFixed(2));
+  ne++; push('add_node',[0,6,5],'Branche alternative x[0,6]=1'); ne++;
+  np++; push('prune',[0,6,5],'Borne sup. LP ≤ meilleur entier'); np++;
+  ne++; push('add_node',[0,4,6],'Branche x[0,4]=1'); ne++;
+  np++; push('prune',[0,4,6],'Contrainte budget MTZ violée'); np++;
+  push('initialize',[0,3,5,6,0],'Optimum prouvé par B&C — CBC terminé');
+  return {total_steps:steps.length,steps};
+}
+
+function generateSASteps(){
+  const steps=[]; let iter=0,evals=0,inc=routeProfit([0,2,6,5,0]);
+  function push(action,route,reason){
+    const cp=routeProfit(route),cc=routeCost(route),rb=BUDGET-cc;
+    steps.push({step_number:steps.length+1,action,route:[...route],current_profit:cp,current_cost:cc,remaining_budget:rb,nodes_explored:iter,nodes_pruned:evals,decision_reason:reason,best_incumbent_profit:inc});
+  }
+  push('initialize',[0,2,6,5,0],'Solution initiale greedy-aléatoire. T₀=4.32');
+  const moves=[
+    {action:'iteration',route:[0,2,4,6,0],reason:'INSERT nœud 4 → Δscore=+9 ACCEPTÉ (Δ>0)'},
+    {action:'update_incumbent',route:[0,2,4,6,0],reason:'Nouveau meilleur : profit='+routeProfit([0,2,4,6,0]).toFixed(2)},
+    {action:'iteration',route:[0,6,4,0],reason:'REMOVE nœud 2 → Δscore=−8 P(acc)=exp(−8/3.12)=0.08 — REFUSÉ'},
+    {action:'iteration',route:[0,3,5,6,0],reason:'2-OPT inversion [2..4] → Δscore=+4 ACCEPTÉ'},
+    {action:'update_incumbent',route:[0,3,5,6,0],reason:'Champion : profit='+routeProfit([0,3,5,6,0]).toFixed(2)+' T=2.10'},
+    {action:'iteration',route:[0,3,5,6,0],reason:'SWAP pos 1↔2 → Δscore=0 ACCEPTÉ (neutre)'},
+    {action:'prune',route:[0,3,5,6,4,0],reason:'INSERT nœud 4 → dist dépasse budget — rejeté'},
+    {action:'iteration',route:[0,3,5,6,0],reason:'T=0.08 < T_min=0.01 — refroidissement terminé'},
+  ];
+  moves.forEach(m=>{ iter++; evals+=3; if(m.action.includes('incumbent')) inc=routeProfit(m.route); push(m.action,m.route,m.reason); });
+  return {total_steps:steps.length,steps};
+}
+
+function generateTabuSteps(){
+  const steps=[]; let iter=0,evals=0,inc=routeProfit([0,2,6,5,0]);
+  function push(action,route,reason){
+    const cp=routeProfit(route),cc=routeCost(route),rb=BUDGET-cc;
+    steps.push({step_number:steps.length+1,action,route:[...route],current_profit:cp,current_cost:cc,remaining_budget:rb,nodes_explored:iter,nodes_pruned:evals,decision_reason:reason,best_incumbent_profit:inc});
+  }
+  push('initialize',[0,2,6,5,0],'Init greedy. Tabu tenure=7. Liste tabou vide.');
+  const seq=[
+    ['iteration',[0,3,6,5,0],'INSERT(3) | REMOVE(2) → meilleur non-tabou. +profit=2'],
+    ['iteration',[0,3,5,6,0],'2-OPT(3,5→5,6) | tabou={REMOVE:3@iter10}. Δ=+3'],
+    ['update_incumbent',[0,3,5,6,0],'Nouveau meilleur : '+routeProfit([0,3,5,6,0]).toFixed(2)+' — tabou={REMOVE:3,SWAP:0}'],
+    ['iteration',[0,3,5,6,0],'INSERT(4) refusé (budget). Aspiration non déclenchée.'],
+    ['iteration',[0,6,5,3,0],'2-OPT inversion segment → tabou check: non-tabou.'],
+    ['prune',[0,6,5,3,0],'Tous voisins tabous — prise du moins mauvais.'],
+    ['iteration',[0,3,5,6,0],'Redémarrage depuis meilleur (no_improve=80 atteint)'],
+    ['update_incumbent',[0,3,5,6,4,0],'Aspiration: profit '+routeProfit([0,3,5,6,4,0]).toFixed(2)+' > meilleur global'],
+  ];
+  seq.forEach(([a,r,reason])=>{ iter++; evals+=8; if(a.includes('incumbent')) inc=routeProfit(r); push(a,r,reason); });
+  return {total_steps:steps.length,steps};
+}
+
+function generateGRASPSteps(){
+  const steps=[]; let iter=0,evals=0,inc=0;
+  function push(action,route,reason){
+    const cp=routeProfit(route),cc=routeCost(route),rb=BUDGET-cc;
+    steps.push({step_number:steps.length+1,action,route:[...route],current_profit:cp,current_cost:cc,remaining_budget:rb,nodes_explored:iter,nodes_pruned:evals,decision_reason:reason,best_incumbent_profit:inc});
+  }
+  push('initialize',[0,0],'GRASP démarré. α=0.35. 70 itérations prévues.');
+  const iters=[
+    {r:[0,6,5,0],score:16,ls:[0,6,5,3,0],lssc:23},
+    {r:[0,3,5,0],score:13,ls:[0,3,5,6,0],lssc:23},
+    {r:[0,4,6,5,0],score:25,ls:[0,4,6,5,0],lssc:25},
+    {r:[0,6,4,2,0],score:27,ls:[0,6,4,0],lssc:19},
+    {r:[0,3,6,5,0],score:23,ls:[0,3,5,6,0],lssc:23},
+  ];
+  iters.forEach((it,i)=>{
+    iter++; evals+=5;
+    push('iteration',it.r,`Construction greedy-aléatoire iter ${i+1} (RCL). Score=${it.score}`);
+    push('improve',it.ls,`Recherche locale (2-OPT+Insert) → score=${it.lssc}`);
+    if(it.lssc>inc){ inc=it.lssc; push('update_incumbent',it.ls,'Nouveau meilleur GRASP : '+inc); }
+  });
+  return {total_steps:steps.length,steps};
+}
+
+/* ═══════════════════════════════════════════════
+   METHOD DEFINITIONS
+═══════════════════════════════════════════════ */
+const METHODS = [
+  { id:'overview', label:'Vue d\'ensemble', color:'#7a7670', type:'Tableau', isOverview:true, name:'', desc:'' },
+  { id:'dp',    label:'DP',    color:'#2d6a4f', type:'Exacte',
+    name:'Programmation Dynamique',
+    desc:'État dp[S][v] = meilleur profit quand le sous-ensemble S est visité et v est la position courante. Complexité O(2ⁿ·n²).',
+    tour:[0,3,5,6,0], score:23, time:'0.008s', optimal:true,
+    params:{'Complexité':'O(2ⁿ·n²)','États DP':'~3 500','n max':'22','Budget':'15.0','Mémoire':'O(2ⁿ·n)','Type':'Exact'},
+    stepsGen: generateDPSteps },
+  { id:'bb',    label:'B&B',   color:'#5c4a8a', type:'Exacte',
+    name:'Branch & Bound',
+    desc:'Énumération implicite en profondeur d\'abord. Élagage dès que le budget est dépassé ou la borne supérieure ≤ incumbent. Initialisation greedy pour un incumbent fort.',
+    tour:[0,3,5,6,0], score:23, time:'0.021s', optimal:false,
+    params:{'Complexité':'O(n!)','Prof. max':'6','Init':'Greedy','Borne sup.':'Restant','Budget':'15.0','Type':'Exact'},
+    stepsGen: generateBBSteps },
+  { id:'ilp',   label:'ILP',   color:'#2d5f8a', type:'Exacte',
+    name:'Programmation Linéaire Entière',
+    desc:'Formulation MILP avec variables binaires x[i,j] par arc. Contraintes MTZ pour l\'élimination des sous-tours. Solveur CBC via PuLP.',
+    tour:[0,3,5,6,0], score:23, time:'0.045s', optimal:true,
+    params:{'Solveur':'CBC/PuLP','Variables':'n²=49','Contraintes':'MTZ','Relax. LP':'Oui','Budget':'15.0','Type':'Exact'},
+    stepsGen: generateILPSteps },
+  { id:'sa',    label:'SA',    color:'#8a3a2d', type:'Métaheuristique',
+    name:'Recuit Simulé',
+    desc:'Acceptation probabiliste P=exp(Δ/T). Température T₀ auto-calibrée. 4 opérateurs de voisinage : INSERT, REMOVE, SWAP_POS, 2-OPT. Refroidissement α=0.995.',
+    tour:[0,2,6,5,0], score:21, time:'0.083s', optimal:false,
+    params:{'α (cooling)':'0.995','T_min':'0.01','Opérateurs':'4','iter_max':'50 000','Calibration':'Auto','Type':'Métaheuristique'},
+    stepsGen: generateSASteps },
+  { id:'tabu',  label:'Tabu',  color:'#6b4c2a', type:'Métaheuristique',
+    name:'Recherche Tabou',
+    desc:'Liste tabou (tenure=7) mémorisant les attributs des mouvements récents. Critère d\'aspiration si score > meilleur global. Intensification toutes les 80 itérations sans amélioration.',
+    tour:[0,3,5,6,4,0], score:25, time:'0.014s', optimal:false,
+    params:{'Tenure':'7 itér.','Voisins/iter':'30','iter_max':'500','Redémarrage':'80 iter','Aspiration':'score>best','Type':'Métaheuristique'},
+    stepsGen: generateTabuSteps },
+  { id:'grasp', label:'GRASP', color:'#3a5c3a', type:'Métaheuristique',
+    name:'GRASP',
+    desc:'70 itérations : construction greedy-randomisée via RCL (α=0.35), puis amélioration locale (2-OPT + Insert/Remove). Chaque itération est indépendante ; le meilleur résultat est retenu.',
+    tour:[0,3,5,6,0], score:23, time:'0.124s', optimal:false,
+    params:{'α (RCL)':'0.35','Itérations':'70','R. locale':'2-OPT+INS+REM','Multi-départ':'Oui','Seed':'42','Type':'Métaheuristique'},
+    stepsGen: generateGRASPSteps },
+];
+const methodMap = {};
+METHODS.forEach(m => methodMap[m.id]=m);
+
+/* ═══════════════════════════════════════════════
+   BUILD NAV
+═══════════════════════════════════════════════ */
+const nav = document.getElementById('method-nav');
+METHODS.forEach((m,i) => {
+  const btn = document.createElement('div');
+  btn.className = 'mtab' + (i===0?' active':'');
+  btn.style.setProperty('--ac', m.color);
+  btn.dataset.id = m.id;
+  btn.innerHTML = `${m.label} <span class="badge">${m.type}</span>`;
+  btn.addEventListener('click', () => activateMethod(m.id));
+  nav.appendChild(btn);
+});
+
+/* ═══════════════════════════════════════════════
+   OVERVIEW
+═══════════════════════════════════════════════ */
+function buildOverview(){
+  const grid = document.getElementById('overview-panel');
+  const bestScore = Math.max(...METHODS.filter(m=>!m.isOverview).map(m=>m.score));
+  METHODS.filter(m=>!m.isOverview).forEach(m=>{
+    const gap = bestScore - m.score;
+    const fillPct = (m.score / bestScore * 100).toFixed(1);
+    const card = document.createElement('div');
+    card.className = 'overview-card';
+    card.style.setProperty('--ac', m.color);
+    card.innerHTML = `
+      <div class="oc-header">
+        <div>
+          <div class="oc-title" style="color:${m.color}">${m.name}</div>
+          <div style="font-family:var(--mono);font-size:.58rem;color:var(--muted);margin-top:2px">${m.label} · ${m.type}</div>
+        </div>
+      </div>
+      <div class="oc-body">
+        <div class="oc-stat-row"><span class="oc-sl">Profit obtenu</span><span class="oc-sv" style="color:${m.color}">${m.score.toFixed(1)}</span></div>
+        <div class="oc-stat-row"><span class="oc-sl">Temps CPU</span><span class="oc-sv" style="color:${m.color}">${m.time}</span></div>
+        <div class="oc-stat-row"><span class="oc-sl">Écart au meilleur</span><span class="oc-sv" style="color:${gap>0?'#8a3a2d':m.color}">${gap>0?'+'+gap.toFixed(1):gap.toFixed(1)}</span></div>
+        <div class="oc-bar-wrap">
+          <div class="oc-bar-label"><span>Score relatif</span><span>${fillPct}%</span></div>
+          <div class="oc-bar-track"><div class="oc-bar-fill" style="width:${fillPct}%;background:${m.color}"></div></div>
+        </div>
+        <p class="oc-desc">${m.desc}</p>
+        <div class="oc-steps">
+          ${Object.entries(m.params).slice(0,3).map(([k,v])=>`
+            <div class="oc-step">
+              <span class="oc-step-num" style="color:${m.color};background:color-mix(in srgb,${m.color} 10%,transparent);border-color:color-mix(in srgb,${m.color} 20%,transparent)">${k}</span>
+              <span class="oc-step-text">${v}</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+    card.addEventListener('click', () => activateMethod(m.id));
+    grid.appendChild(card);
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   PLOTLY — no zoom, no pan, no toolbar
+═══════════════════════════════════════════════ */
+let graphInitialized = false;
+
+const PLOTLY_CONFIG = {
+  responsive: true,
+  displayModeBar: false,
+  staticPlot: true,        /* disables all mouse interaction including zoom */
+};
+
+function buildGraphTraces(step, color){
+  const traces = [];
+  for(let i=0;i<V.length;i++){
+    for(let j=i+1;j<V.length;j++){
+      traces.push({x:[V[i].x,V[j].x],y:[V[i].y,V[j].y],mode:'lines',type:'scatter',hoverinfo:'skip',line:{color:'#e0ded8',width:.9},showlegend:false});
+    }
+  }
+  const route = step?(step.route||[]):[];
+  for(let i=0;i<route.length-1;i++){
+    const a=V[route[i]],b=V[route[i+1]];
+    traces.push({x:[a.x,b.x],y:[a.y,b.y],mode:'lines',type:'scatter',hoverinfo:'skip',line:{color,width:3},showlegend:false});
+  }
+  const visited = new Set(route.slice(1,-1));
+  const nx=[],ny=[],nc=[],ns=[],nsym=[];
+  V.forEach(v=>{
+    nx.push(v.x); ny.push(v.y);
+    if(v.type==='depot'){nc.push('#2d5f8a');ns.push(20);nsym.push('star');}
+    else if(visited.has(v.id)){nc.push(color);ns.push(14);nsym.push('circle');}
+    else{nc.push('#c8d8e8');ns.push(11);nsym.push('circle');}
+  });
+  traces.push({
+    x:nx,y:ny,mode:'markers+text',type:'scatter',
+    text:V.map(v=>`${v.label}  p=${v.profit}`),
+    textposition:'top center',
+    textfont:{size:10,color:'#7a7670',family:'IBM Plex Mono'},
+    marker:{color:nc,size:ns,symbol:nsym,line:{color:'#b0ada6',width:1}},
+    hoverinfo:'none',
+    showlegend:false
+  });
+  return traces;
+}
+
+function buildEdgeAnnotations(){
+  const anns=[];
+  for(let i=0;i<V.length;i++){
+    for(let j=i+1;j<V.length;j++){
+      anns.push({
+        x:(V[i].x+V[j].x)/2, y:(V[i].y+V[j].y)/2,
+        text:dist(V[i],V[j]).toFixed(2),
+        font:{size:8,color:'#b0ada6',family:'IBM Plex Mono'},
+        showarrow:false, bgcolor:'rgba(255,255,255,0.82)', borderpad:2,
+      });
+    }
+  }
+  return anns;
+}
+
+function updateGraph(step, color){
+  const traces = buildGraphTraces(step, color);
+  const title = step?`Étape ${step.step_number} — ${step.action}`:'Graphe de l\'instance';
+  const layout = {
+    title:{text:title,font:{size:11,color:'#7a7670',family:'IBM Plex Mono'},x:0.02},
+    xaxis:{visible:false,range:[-0.6,7],fixedrange:true},
+    yaxis:{visible:false,range:[-0.9,6.3],scaleanchor:'x',scaleratio:1,fixedrange:true},
+    margin:{l:10,r:10,t:34,b:10},
+    paper_bgcolor:'#ffffff',
+    plot_bgcolor:'#ffffff',
+    annotations:buildEdgeAnnotations(),
+    dragmode:false,
+  };
+  if(!graphInitialized){
+    Plotly.newPlot('graph-plotly',traces,layout,PLOTLY_CONFIG);
+    graphInitialized=true;
+  } else {
+    Plotly.react('graph-plotly',traces,layout,PLOTLY_CONFIG);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   KPI + OUTCOME
+═══════════════════════════════════════════════ */
+function updateKPIs(step, color){
+  const set=(id,val)=>{ const el=document.getElementById(id); el.textContent=val; el.style.color=color; };
+  set('kpi-profit',   (+step.current_profit).toFixed(2));
+  set('kpi-budget',   (+step.remaining_budget).toFixed(2));
+  set('kpi-cost',     (+step.current_cost).toFixed(2));
+  set('kpi-incumbent',(+step.best_incumbent_profit).toFixed(2));
+  set('kpi-explored', step.nodes_explored);
+  set('kpi-pruned',   step.nodes_pruned);
+  document.getElementById('step-current').textContent = step.step_number;
+}
+
+const actionColors = {
+  add_node:'#2d6a4f',insert:'#2d6a4f',improve:'#2d6a4f',update_incumbent:'#2d6a4f',
+  prune:'#8a3a2d',iteration:'#2d5f8a',generation:'#2d5f8a',dp_state:'#2d5f8a',
+  initialize:'#5c4a8a'
+};
+
+function updateOutcome(step){
+  const ac = actionColors[step.action]||'#7a7670';
+  document.getElementById('outcome-box').innerHTML =
+    `<b>Action :</b> <span class="action-chip" style="background:color-mix(in srgb,${ac} 12%,transparent);color:${ac};border:1px solid color-mix(in srgb,${ac} 30%,transparent)">${step.action}</span><br>` +
+    `<b>Route :</b> [${(step.route||[]).map(v=>'v'+v).join(' → ')}]<br>` +
+    `<b>Décision :</b> ${step.decision_reason||'—'}`;
+}
+
+/* ═══════════════════════════════════════════════
+   ALGO BREAKDOWN RENDER
+═══════════════════════════════════════════════ */
+function renderAlgoBreakdown(id){
+  const list = document.getElementById('algo-steps-list');
+  const steps = ALGO_STEPS[id] || [];
+  list.innerHTML = steps.map(s=>`
+    <div class="algo-step-row">
+      <span class="algo-step-num">${s.num}</span>
+      <span class="algo-step-text">${s.text}</span>
+    </div>`).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   ANIMATION STATE
+═══════════════════════════════════════════════ */
+let currentMethod = null;
+let currentHistory = {total_steps:0,steps:[]};
+let currentStep = 0;
+let isPlaying = false;
+let playTimer = null;
+
+function playAnim(){
+  if(isPlaying) return;
+  isPlaying=true;
+  document.getElementById('btn-play').disabled=true;
+  tick();
+}
+function resetAnim(){
+  isPlaying=false; clearTimeout(playTimer);
+  document.getElementById('btn-play').disabled=false;
+  currentStep=0; renderStep(0);
+}
+function tick(){
+  if(!isPlaying) return;
+  if(currentStep<currentHistory.total_steps-1){
+    currentStep++;
+    renderStep(currentStep);
+    playTimer=setTimeout(tick,820);
+  } else {
+    isPlaying=false;
+    document.getElementById('btn-play').disabled=false;
+  }
+}
+
+function renderStep(idx){
+  if(!currentMethod||!currentHistory.steps.length) return;
+  const step=currentHistory.steps[idx];
+  const color=currentMethod.color;
+  updateGraph(step,color);
+  updateKPIs(step,color);
+  updateOutcome(step);
+}
+
+/* ═══════════════════════════════════════════════
+   ACTIVATE METHOD
+═══════════════════════════════════════════════ */
+function activateMethod(id){
+  isPlaying=false; clearTimeout(playTimer);
+  document.querySelectorAll('.mtab').forEach(t=>t.classList.toggle('active',t.dataset.id===id));
+
+  const overview = document.getElementById('overview-panel');
+  const workspace = document.getElementById('workspace');
+
+  if(id==='overview'){
+    overview.classList.add('visible');
+    workspace.classList.remove('visible');
+    return;
+  }
+  overview.classList.remove('visible');
+  workspace.classList.add('visible');
+
+  const m=methodMap[id];
+  currentMethod=m;
+  document.documentElement.style.setProperty('--ac',m.color);
+  document.getElementById('btn-play').disabled=false;
+
+  document.getElementById('ri-type').textContent=m.type.toUpperCase()+' · '+m.label;
+  document.getElementById('ri-type').style.color=m.color;
+  document.getElementById('ri-name').textContent=m.name;
+  document.getElementById('ri-desc').textContent=m.desc;
+
+  document.getElementById('params-grid').innerHTML=Object.entries(m.params).map(([k,v])=>`
+    <div class="param-item">
+      <div class="pk">${k}</div>
+      <div class="pv" style="color:${m.color}">${v}</div>
+    </div>`).join('');
+
+  document.getElementById('leg-visited').style.cssText=`background:color-mix(in srgb,${m.color} 30%,transparent);border:2px solid ${m.color};width:8px;height:8px;border-radius:50%;flex-shrink:0`;
+  document.getElementById('leg-route').style.cssText=`background:${m.color};width:16px;height:2px;border-radius:1px;flex-shrink:0`;
+  document.getElementById('outcome-box').style.borderLeftColor=m.color;
+
+  currentHistory=m.stepsGen();
+  currentStep=0;
+
+  document.getElementById('step-total').textContent=currentHistory.total_steps;
+  document.getElementById('step-current').textContent='1';
+
+  renderAlgoBreakdown(id);
+  renderStep(0);
+}
+
+/* ═══════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════ */
+buildOverview();
+activateMethod('overview');
+setTimeout(()=>{ activateMethod('dp'); }, 200);
+</script>
+</body>
+</html>

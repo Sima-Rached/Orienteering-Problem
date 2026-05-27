@@ -1,0 +1,15 @@
+# Dépendances pour le projet Orienteering Problem
+
+# Dépendance externe (automatiquement installée à la première utilisation)
+pulp>=2.0  # Solveur ILP (CBC inclus)
+
+# Dépendances standard de Python 3.7+ (déjà incluses)
+# - numpy
+# - random (standard library)
+# - time (standard library)
+# - dataclasses (standard library, backport disponible pour Python < 3.7)
+# - math (standard library)
+# - collections (standard library)
+
+# Installation des dépendances:
+# pip install -r requirements.txt --break-system-packages
